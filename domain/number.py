@@ -1,3 +1,5 @@
+from domain.exceptions import InvalidBaseException, InvalidSymbolException
+
 class Number:
     SYMBOLS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -8,12 +10,12 @@ class Number:
 
     def _validate(self):
         if not (2 <= self.base <= 36):
-            raise ValueError(f"La base {self.base} no está soportada (debe estar entre 2 y 36).")
+            raise InvalidBaseException(f"La base {self.base} no está soportada (debe estar entre 2 y 36).")
 
         permitted_symbols = self.SYMBOLS[:self.base]
         for character in self.value:
             if character not in permitted_symbols:
-                raise ValueError(
+                raise InvalidSymbolException(
                     f"El símbolo '{character}' NO existe en la Base {self.base}. "
                     f"Símbolos válidos: {permitted_symbols}"
                 )
