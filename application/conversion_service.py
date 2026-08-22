@@ -7,7 +7,8 @@ class ConversionService:
     def explore_base(self, base: int, limit: int = 10) -> list:
         return Converter.get_base_structure(base, limit)
 
-    def process_full_conversion(self, value: str, source_base: int, target_base: int) -> dict:
+    @staticmethod
+    def process_full_conversion(value: str, source_base: int, target_base: int) -> dict:
         # 1. Validate and create the entity
         number = Number(value, source_base)
 
