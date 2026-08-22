@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, jsonify
 from application.conversion_service import ConversionService
 
 # Equivalente a @RestController en Spring
@@ -38,58 +38,37 @@ def explore(base):
     return jsonify(coleccion), 200
 
 
-@api_blueprint.route('/api/convert', methods=['POST'])
-def convert():
+# Usamos GET en lugar de POST, y definimos las variables en el Path
+@api_blueprint.route('/api/convert/<string:value>/from/<int:source_base>/to/<int:target_base>', methods=['GET'])
+def convert(value: str, source_base: int, target_base: int):
     """
-    Convierte un número de una base a otra.
+    Convierte un número de una base a otra usando parámetros en la URL.
     ---
     parameters:
-      - in: body
-        name: body
-        schema:
-          type: object
-          required:
-            - value
-            - source_base
-            - target_base
-          properties:
-            value:
-              type: string
-            source_base:
-              type: integer
-            target_base:
-              type: integer
+      - name: value
+        in: path
+        type: string
+        required: true
+        description: El valor que deseas convertir (ej. A05)
+      - name: source_base
+        in: path
+        type: integer
+        required: true
+        description: La base numérica de origen (ej. 16)
+      - name: target_base
+        in: path
+        type: integer
+        required: true
+        description: La base numérica destino (ej. 2)
     responses:
       200:
-        description: Reporte de conversión.
+        description: Reporte detallado de la conversión.
+      400:
+        description: Error de validación (símbolos o bases inválidas).
     """
-    # Equivalente a @RequestBody en Java. 'silent=True' evita que Flask
-    # lance un error fatal si falta el header Content-Type.
-    data = request.get_json(silent=True)
-
-    if not data:
-        return jsonify({
-            "error": "Petición Inválida",
-            "message": "Se esperaba un cuerpo JSON en la petición."
-        }), 400
-
-    # Usamos .get() de forma segura para validar qué viene en el JSON
-    value = data.get('value')
-    source_base = data.get('source_base')
-    target_base = data.get('target_base')
-
-    if value is None or source_base is None or target_base is None:
-        return jsonify({
-            "error": "Parámetros incompletos",
-            "message": "Los campos 'value', 'source_base' y 'target_base' son obligatorios."
-        }), 400
-
     try:
-        # Forzamos los tipos para evitar errores si mandan strings numéricos
-        source_base = int(source_base)
-        target_base = int(target_base)
-
-        report = service.process_full_conversion(str(value), source_base, target_base)
+        # Ya no necesitamos request.get_json(), los parámetros llegan directo a la función
+        report = ConversionService.process_full_conversion(value, source_base, target_base)
 
         # Mapeo de DTO para la respuesta JSON
         report["number"] = {
@@ -100,5 +79,4 @@ def convert():
         return jsonify(report), 200
 
     except ValueError as e:
-        # Captura si source_base o target_base no se pueden convertir a enteros
         return jsonify({"error": "Tipo de dato incorrecto", "message": str(e)}), 400
