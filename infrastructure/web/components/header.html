@@ -1,17 +1,19 @@
-<header class="bg-gradient-to-r from-brandBlue-dark via-brandBlue to-brandBlue-light text-white shadow-xl py-4 px-8 border-b-4 border-brandYellow">
-    <div class="max-w-7xl mx-auto flex items-center justify-between">
+<header class="bg-gradient-to-r from-brandYellow-dark via-brandYellow to-brandYellow-light shadow-md py-4 px-4 md:px-8 border-b-4 border-brandBlue-dark">
+    <div class="w-full flex items-center justify-between">
         <div class="flex items-center space-x-3">
-            <span class="text-3xl">🚀</span>
+            <!-- BOTÓN HAMBURGUESA (Móvil/Tablet) -->
+            <button id="btnMenuToggle" type="button" class="lg:hidden p-2 text-brandBlue-dark hover:bg-brandBlue/10 rounded-lg transition" title="Abrir Menú">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <span class="text-3xl hidden sm:inline">🚀</span>
             <div>
-                <h1 class="text-2xl font-bold tracking-wide">Conversión de sistemas numéricos</h1>
-                <p class="text-xs text-brandYellow font-medium">BaseShift API</p>
+                <h1 class="text-xl md:text-2xl font-bold tracking-wide text-brandBlue-dark">Conversión de sistemas numéricos</h1>
+                <p class="text-xs text-brandBlue font-extrabold uppercase tracking-wider">BaseShift API</p>
             </div>
         </div>
 
-        <!-- Área de Logo Ampliada para PNGs Transparentes -->
-        <div class="flex items-center justify-end h-16 w-48 overflow-hidden">
-            <img id="appLogo" src="assets/logo-institucion2.png" alt="Logo Institucional"
-                 class="max-h-full max-w-full object-contain filter drop-shadow-md transition-all hover:scale-105">
+        <div class="flex items-center justify-end h-12 md:h-16 w-36 md:w-48 overflow-hidden">
+            <img id="appLogo" src="assets/logo-institucion2.png" alt="Logo Institucional" class="max-h-full max-w-full object-contain filter drop-shadow-md">
         </div>
     </div>
 </header>

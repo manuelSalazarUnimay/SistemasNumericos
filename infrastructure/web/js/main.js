@@ -5,6 +5,7 @@ function initApp() {
     const baseFromSelect = document.getElementById('baseFrom');
     const baseToSelect = document.getElementById('baseTo');
     const btnReset = document.getElementById('btnReset');
+    const btnSwap = document.getElementById('btnSwap'); // Capturado dentro del scope de la app
 
     const resultBanner = document.getElementById('resultBanner');
     const resultValue = document.getElementById('resultValue');
@@ -85,7 +86,7 @@ function initApp() {
         });
     }
 
-    // Evento Formulario: Convertir
+    // Evento Formulario: Convertir usando API real (convertNumber)
     if (form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -102,6 +103,30 @@ function initApp() {
         });
     }
 
+    // Evento: Invertir Bases y Resultado (AHORA DENTRO DEL SCOPE DE initApp)
+    if (btnSwap) {
+        btnSwap.addEventListener('click', () => {
+            // 1. Intercambiar los valores seleccionados de las bases
+            const tempBase = baseFromSelect.value;
+            baseFromSelect.value = baseToSelect.value;
+            baseToSelect.value = tempBase;
+
+            // 2. Si ya se calculó un resultado previo, moverlo al campo de origen
+            const quickDisplay = document.getElementById('quickResultDisplay');
+            if (quickDisplay && quickDisplay.textContent !== '---') {
+                inputVal.value = quickDisplay.textContent.trim();
+            }
+
+            // 3. Actualizar tarjetas visuales de posición
+            updateBitPreview();
+
+            // 4. Re-ejecutar la conversión automáticamente si el input tiene valor
+            if (inputVal && inputVal.value.trim() !== '') {
+                form?.dispatchEvent(new Event('submit'));
+            }
+        });
+    }
+
     // Evento: Nueva Conversión (Limpiar Campos)
     if (btnReset) {
         btnReset.addEventListener('click', () => {
@@ -111,6 +136,12 @@ function initApp() {
             }
             if (resultBanner) resultBanner.classList.add('hidden');
             if (resultValue) resultValue.textContent = '---';
+
+            const quickDisplay = document.getElementById('quickResultDisplay');
+            const quickBase = document.getElementById('quickResultBase');
+            if (quickDisplay) quickDisplay.textContent = '---';
+            if (quickBase) quickBase.textContent = 'Esperando conversión...';
+
             if (stepsContainer) {
                 stepsContainer.innerHTML = `
                     <div class="text-center py-12 text-slate-400 italic">
@@ -119,6 +150,7 @@ function initApp() {
             }
             hideError();
             activateTab(tabs[0]);
+            updateBitPreview();
         });
     }
 
@@ -137,8 +169,20 @@ function initApp() {
 
     function renderResults(data) {
         if (Array.isArray(data)) data = data[0];
-        resultValue.textContent = data.final_result || data.result || '---';
-        resultBanner.classList.remove('hidden');
+        const finalResult = data.final_result || data.result || '---';
+
+        if (resultValue) resultValue.textContent = finalResult;
+        if (resultBanner) resultBanner.classList.remove('hidden');
+
+        const resultFromValue = document.getElementById('resultFromValue');
+        if (resultFromValue) resultFromValue.textContent = inputVal.value;
+
+        const quickDisplay = document.getElementById('quickResultDisplay');
+        const quickBase = document.getElementById('quickResultBase');
+        const baseToText = baseToSelect?.options[baseToSelect.selectedIndex]?.text || '';
+
+        if (quickDisplay) quickDisplay.textContent = finalResult;
+        if (quickBase) quickBase.textContent = baseToText;
 
         let allSteps = [];
         if (data.powers_method && Array.isArray(data.powers_method.terms)) {
@@ -227,6 +271,84 @@ function initApp() {
         return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
-    // Ejecución inicial
+    function updateBitPreview() {
+        const bitPreview = document.getElementById('bitPreview');
+        const baseBadge = document.getElementById('baseBadge');
+
+        if (!bitPreview || !inputVal || !baseFromSelect) return;
+        if (baseBadge) baseBadge.textContent = `Base ${baseFromSelect.value}`;
+
+        const rawValue = inputVal.value.trim().toUpperCase();
+        if (!rawValue) {
+            bitPreview.innerHTML = '<span class="text-xs text-slate-400 italic">Escribe un número para previsualizar sus posiciones</span>';
+            return;
+        }
+
+        const base = parseInt(baseFromSelect.value);
+        const chars = rawValue.split('');
+        const len = chars.length;
+
+        bitPreview.innerHTML = chars.map((char, idx) => {
+            const power = len - 1 - idx;
+            const digitVal = parseInt(char, base);
+            const isValid = !isNaN(digitVal);
+            const isActive = isValid && digitVal > 0;
+
+            const cardStyle = isActive
+                ? 'bg-emerald-50 border-2 border-emerald-500 text-emerald-700'
+                : 'bg-slate-100 border border-slate-300 text-slate-400 opacity-60';
+
+            return `
+                <div class="flex flex-col items-center justify-center w-11 h-14 rounded-lg font-mono transition-all transform hover:scale-105 ${cardStyle}">
+                    <span class="text-base font-black leading-none mb-1">${char}</span>
+                    <span class="text-[10px] leading-none opacity-80">${base}<sup>${power}</sup></span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Event Listeners para Entrada y Ejemplos
+    inputVal?.addEventListener('input', updateBitPreview);
+    baseFromSelect?.addEventListener('change', updateBitPreview);
+
+    document.querySelectorAll('.quick-sample').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const val = e.currentTarget.dataset.val;
+            const from = e.currentTarget.dataset.from;
+            const to = e.currentTarget.dataset.to;
+
+            if (inputVal) inputVal.value = val;
+            if (baseFromSelect) baseFromSelect.value = from;
+            if (baseToSelect) baseToSelect.value = to;
+
+            updateBitPreview();
+            form?.dispatchEvent(new Event('submit'));
+        });
+    });
+
+    // Ejecución inicial de poblado
     populateBases();
 }
+
+// TRANSICIÓN DE PANTALLAS (FORMULARIO <-> DESGLOSE COMPLETO)
+document.addEventListener('click', (e) => {
+    const btnShowDetails = e.target.closest('#btnShowDetails');
+    const btnBackToForm = e.target.closest('#btnBackToForm');
+
+    if (btnShowDetails) {
+        e.preventDefault();
+        document.getElementById('form-root')?.classList.add('hidden');
+        document.getElementById('results-root')?.classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    if (btnBackToForm) {
+        e.preventDefault();
+        document.getElementById('results-root')?.classList.add('hidden');
+        document.getElementById('form-root')?.classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+});
+
+// Inicialización de la App al cargar el DOM
+document.addEventListener('DOMContentLoaded', initApp);
